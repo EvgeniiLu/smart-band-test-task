@@ -1,22 +1,66 @@
 <template>
-  <div class="user" v-if="user">
-    <div class="user-photo">
-      <img :src="user.avatar" alt="УПС" />
+  <div class="container">
+    <div class="user">
+      <div class="user-img">
+        <el-skeleton style="width: 300px" :loading="loadingImg" animated>
+          <template #template>
+            <el-skeleton-item
+              variant="image"
+              style="width: 300px; height: 300px"
+            />
+          </template>
+          <template #default>
+            <div class="user-photo">
+              <img :src="image.url" alt="УПС" />
+            </div>
+          </template>
+        </el-skeleton>
+      </div>
+      <div class="user-info">
+        <el-skeleton style="width: 300px" :loading="loading" animated>
+          <template #template>
+            <div style="padding: 14px">
+              <el-skeleton-item variant="h3" />
+              <el-skeleton-item variant="h3" style="margin-top: 10px" />
+              <el-skeleton-item variant="h3" style="margin-top: 10px" />
+            </div>
+          </template>
+          <template #default>
+            <div class="user-name">
+              Имя: {{ user.first_name }} {{ user.last_name }}
+            </div>
+            <div class="user-age">Возраст: {{ fullAge }}</div>
+            <div class="user-employment">Должность: {{ user.employment }}</div>
+          </template>
+        </el-skeleton>
+      </div>
     </div>
-    <div class="user-name">Имя: {{ user.first_name }} {{ user.last_name }}</div>
-    <div class="user-age">Возраст: {{ fullAge }}</div>
-    <div class="user-employment">Должность: {{ user.employment }}</div>
+    <div class="beer">
+      <el-skeleton style="width: 50%" :loading="loading" animated>
+        <template #template>
+          <div style="padding: 14px">
+            <el-skeleton-item variant="h3" />
+            <el-skeleton-item variant="h3" style="margin-top: 10px" />
+            <el-skeleton-item variant="h3" style="margin-top: 10px" />
+          </div>
+        </template>
+        <template #default>
+          <div class="beer-brand">Производитель: {{ beer.brand }}</div>
+          <div class="beer-name">Название: {{ beer.name }}</div>
+          <div class="beer-alcohol">
+            Содержание алкоголя: {{ beer.alcohol }}
+          </div>
+        </template>
+      </el-skeleton>
+      <el-button type="primary" @click="clickFunc">Хочу другое пиво</el-button>
+    </div>
   </div>
-  <div class="beer" v-if="beer">
-    <div class="beer-brand">Производитель: {{ beer.brand }}</div>
-    <div class="beer-name">Название: {{ beer.name }}</div>
-    <div class="beer-alcohol">Содержание алкоголя: {{ beer.alcohol }}</div>
-  </div>
-  <el-button type="primary" @click="clickFunc">Хочу другое пиво</el-button>
 </template>
 <script>
 import { loadUser } from "./api.js";
 import { loadBeer } from "./api.js";
+import { loadImage } from "./api.js";
+import { ref } from "vue";
 
 export default {
   name: "App",
@@ -25,16 +69,19 @@ export default {
     return {
       user: null,
       beer: null,
+      image: null,
+
+      loading: ref(true),
+      loadingImg: ref(true),
     };
   },
 
   mounted: async function () {
     const [userObj, beerObj] = await Promise.all([loadUser(), loadBeer()]);
     this.user = {
-      avatar: userObj.avatar,
       first_name: userObj.first_name,
       last_name: userObj.last_name,
-      fullAge: userObj.fullAge,
+      fullAge: userObj.date_of_birth,
       employment: userObj.employment.title,
     };
     this.beer = {
@@ -42,11 +89,15 @@ export default {
       name: beerObj.name,
       alcohol: beerObj.alcohol,
     };
+    this.loading = false;
+
+    this.image = await loadImage(userObj.avatar);
+    if (this.image) this.loadingImg = false;
   },
 
   computed: {
     fullAge() {
-      let dateBirth = new Date(this.user.date_of_birth);
+      let dateBirth = new Date(this.user.fullAge);
       let date = new Date();
       return Math.floor((date - dateBirth) / (60 * 60 * 24 * 365 * 1000));
     },
@@ -60,21 +111,4 @@ export default {
 };
 </script>
 
-<style lang="scss">
-.el-carousel__item h3 {
-  color: #475669;
-  font-size: 14px;
-  opacity: 0.75;
-  line-height: 150px;
-  margin: 0;
-  text-align: center;
-}
-
-.el-carousel__item:nth-child(2n) {
-  background-color: #99a9bf;
-}
-
-.el-carousel__item:nth-child(2n + 1) {
-  background-color: #d3dce6;
-}
-</style>
+<style lang="scss"></style>
